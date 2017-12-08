@@ -1,0 +1,79 @@
+module gamestatus (
+    input clk,  // clock
+    input rst,  // reset
+    input ascore[8],
+    input bscore[8],
+    input goal[8],
+    //input timer[8],
+    output status[2]
+  ) {
+
+  //Draw: 10
+  //A wins:01
+  //B wins:00
+  //undecided: 11
+ 
+
+    .clk(clk) {
+
+    fsm state(#INIT(IDLE)) = {IDLE,GAMEPLAY};
+    dff gamestatus[2](.clk(clk), .rst(rst), #INIT(11));
+    }
+  
+  
+  alu alucomapre;
+  alu alucomapre2;
+  no_overflow_decider decider;
+ 
+  sig aoverflow;
+  sig boverflow;
+  
+  always {
+
+  //test for score<a
+    alucomapre.clk=clk;
+    alucomapre.rst=rst;
+    alucomapre.alufn[5:0]='b110011;
+    alucomapre.a[7:0]=goal[7:0];
+     alucomapre.b[7:0]=ascore[7:0];
+    aoverflow=alucomapre.alu[0];
+  //test for score<b
+    alucomapre2.clk=clk;
+    alucomapre2.rst=rst;
+    alucomapre2.alufn[5:0]='b110011;
+    alucomapre2.a[7:0]=goal[7:0];
+     alucomapre2.b[7:0]=bscore[7:0];
+    boverflow=alucomapre2.alu[0];
+   //no_overflow_decider
+    decider.clk=clk;
+    decider.rst=rst;
+    decider.ascore[7:0]=ascore[7:0];
+    decider.bscore[7:0]=bscore[7:0];
+
+      case(state.q){
+      state.GAMEPLAY:
+  if (aoverflow){
+    status[1:0]='b00;
+    state.d=state.IDLE;
+    }
+  else if (boverflow){
+      gamestatus.d[0] = 1;
+      gamestatus.d[1] = 0;    
+      status[1:0]='b01;
+      state.d=state.IDLE;
+      }
+    //else if(timer=='b00000000){
+   // status[1:0]=decider.status[1:0];
+  //  state.d=state.IDLE;
+  //  }
+     else{
+      gamestatus.d[0] = 1;
+      gamestatus.d[1] = 1;
+       status[1:0]='b11;
+          
+          
+        }
+    
+    }    
+}
+}

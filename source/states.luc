@@ -1,0 +1,400 @@
+module states (
+    input clk,  // clock
+    input rst_n,            // reset button (active low)
+    input abuttonup,
+    input abuttondown,
+    input abuttonleft,
+    input abuttonright,
+    input bbuttonup,
+    input bbuttondown,
+    input bbuttonleft,
+    input bbuttonright,
+    
+    input buttonreset,
+    input buttonchange,  //change player
+    input buttontest,         //start testing
+    
+
+    input abuttonstart, 
+    output io_sel1[4],   //a position
+    output io_sel2[4],   //b position
+    output ascor[8],      //output for other module
+    output bscor[8],
+    
+    output box1value[3],
+    output box2value[3],
+    output box3value[3],
+    output box4value[3]
+
+  ) {
+
+  
+  
+  sig rst;                  // reset signal
+  sig four1[4][3];             //value from generator
+  sig goal[8];
+
+  
+.clk(clk){
+    reset_conditioner reset_cond;
+    .rst(rst){
+    
+    fsm position(#INIT(IDLE)) = {IDLE,START,AONE,ATWO,ATHREE,AFOUR,BSTART,BONE,BTWO,BTHREE,BFOUR,TEST1,TEST2,TEST3,AWIN,BWIN,DRAW};
+    alu alucompare;
+ 
+    numbergen numbergen1;
+    //register reg[9](#WIDTH(4));
+    //register reg_position(#WIDTH(5));
+    }
+
+    edge_detector edge_adetectorup(#RISE(1),#FALL(0));
+    button_conditioner button_acondup;
+    edge_detector edge_adetectordown(#RISE(1),#FALL(0));
+    button_conditioner button_aconddown;
+    edge_detector edge_adetectoruleft(#RISE(1),#FALL(0));
+    button_conditioner button_acondleft;
+    edge_detector edge_adetectorright(#RISE(1),#FALL(0));
+    button_conditioner button_acondright;
+    edge_detector edge_bdetectorup(#RISE(1),#FALL(0));
+    button_conditioner button_bcondup;
+    edge_detector edge_bdetectordown(#RISE(1),#FALL(0));
+    button_conditioner button_bconddown;
+    edge_detector edge_bdetectoruleft(#RISE(1),#FALL(0));
+    button_conditioner button_bcondleft;
+    edge_detector edge_bdetectorright(#RISE(1),#FALL(0));
+    button_conditioner button_bcondright;
+    edge_detector edge_detectorchange(#RISE(1),#FALL(0));
+    button_conditioner button_condchange;
+    edge_detector edge_detectorstart(#RISE(1),#FALL(0));
+    button_conditioner button_condstart;
+    edge_detector edge_detectorreset(#RISE(1),#FALL(0));
+    button_conditioner button_condreset;     
+    edge_detector edge_detectortest(#RISE(1),#FALL(0));
+    button_conditioner button_condtest;    
+    dff value[4][3](.clk(clk), .rst(rst));
+
+    
+    dff ascore[8](.clk(clk), .rst(rst), #INIT(8b00000000));
+    dff bscore[8](.clk(clk), .rst(rst), #INIT(8b00000000));
+   
+    
+  }
+  
+    
+  always {
+        if (edge_detectorreset.out)
+      {position.d = position.IDLE;
+    }
+    
+    goal = 8b00100000;
+    reset_cond.in = ~rst_n; // input raw inverted reset signal
+    rst = reset_cond.out;   // conditioned reset
+    //numbergen1.clk = clk;
+    //numbergen1.rst = rst;
+    four1 = numbergen1.four ;
+
+
+    ascore.d =ascore.q;
+    bscore.d = bscore.q;
+    
+    ascor = ascore.q;
+    bscor = bscore.q;
+    value.d = value.q;
+
+    
+    alucompare.alufn[5:0]=0;
+    alucompare.a = 0;
+    alucompare.b = 0;
+    
+
+    
+
+    
+
+          box1value = value.q[0][2:0];
+          box2value = value.q[1][2:0];
+          box3value = value.q[2][2:0];
+          box4value = value.q[3][2:0];
+  
+    
+
+    io_sel1 = 4b0000;
+    io_sel2 = 4b0000;
+
+    button_acondup.in = ~abuttonup;
+    button_aconddown.in = ~abuttondown;
+    button_acondleft.in = ~abuttonleft;
+    button_acondright.in = ~abuttonright;
+
+    button_condstart.in = ~abuttonstart;
+    button_condtest.in = ~buttontest;
+    button_condreset.in = ~buttonreset;
+          
+    edge_adetectorup.in = button_acondup.out;
+    edge_adetectordown.in = button_aconddown.out;
+    edge_adetectoruleft.in = button_acondleft.out;
+    edge_adetectorright.in = button_acondright.out;
+    
+    edge_detectorstart.in = button_condstart.out;  
+    edge_detectorreset.in = button_condreset.out;  
+    edge_detectortest.in = button_condtest.out;
+    button_bcondup.in = ~bbuttonup;
+    button_bconddown.in = ~bbuttondown;
+    button_bcondleft.in = ~bbuttonleft;
+    button_bcondright.in = ~bbuttonright;
+    button_condchange.in = ~buttonchange;
+      
+    edge_bdetectorup.in = button_bcondup.out;
+    edge_bdetectordown.in = button_bconddown.out;
+    edge_bdetectoruleft.in = button_bcondleft.out;
+    edge_bdetectorright.in = button_bcondright.out;
+    edge_detectorchange.in = button_condchange.out;
+    
+
+    
+    case(position.q){
+      position.IDLE:
+        value.d = numbergen1.four;  
+
+        // ascor = 8b00000000;
+         //bscor = 8b00000000;    
+        if (edge_detectorstart.out)
+          position.d = position.START;
+
+        
+      position.START: 
+          value.d = numbergen1.four;
+        
+          box1value = value.q[0][2:0];
+          box2value = value.q[1][2:0];
+          box3value = value.q[2][2:0];
+          box4value = value.q[3][2:0];
+
+
+        position.d = position.AONE;
+
+          
+           
+
+           
+      position.AONE:
+         io_sel1[0] = 1;
+        if (edge_adetectorup.out)
+          {
+          position.d = position.ATHREE;
+          ascore.d = ascore.q + value.q[2][2:0];
+          value.d[2][2:0] = value.q[2][2:0] + 1;
+
+        }
+          //ascore = ascore + boxfour[7];
+         // reg.data[4] = reg.data[1] + reg.data[4];
+          
+        if (edge_adetectorright.out)
+         { position.d = position.ATWO;
+          ascore.d = ascore.q + value.q[1][2:0];
+          value.d[1][2:0] = value.q[1][2:0] + 1;
+        }
+        if (edge_detectorchange.out)//||timer
+         position.d = position.BSTART;
+        
+         
+      position.ATWO:
+        io_sel1[1] = 1;
+        if(edge_adetectoruleft.out)
+         { position.d = position.AONE;
+          ascore.d = ascore.q + value.q[0][2:0];
+          value.d[0][2:0] = value.q[0][2:0] + 1;
+
+        } 
+          
+        if (edge_adetectorup.out)
+          {position.d = position.AFOUR;
+         
+         ascore.d = ascore.q + value.q[3][2:0];
+          value.d[3][2:0] = value.q[3][2:0] + 1;
+
+        }  
+        if (edge_detectorchange.out)//||timer
+         position.d = position.BSTART;
+         
+
+          
+      position.ATHREE:
+        io_sel1[2] = 1;
+        if (edge_adetectorright.out)
+         { position.d = position.AFOUR;
+          ascore.d = ascore.q + value.q[3][2:0];
+          value.d[3][2:0] = value.q[3][2:0] + 1;
+
+        }
+          
+        if (edge_adetectordown.out)
+        {
+          position.d = position.AONE;
+          ascore.d = ascore.q + value.q[0][2:0];
+          value.d[0][2:0] = value.q[0][2:0] + 1;
+
+        }
+        if (edge_detectorchange.out)//||timer
+         position.d = position.BSTART;
+        
+      position.AFOUR:
+        io_sel1[3] = 1;
+
+                  
+        if (edge_adetectoruleft.out)
+         { position.d = position.ATHREE;
+          ascore.d = ascore.q + value.q[2][2:0];
+          value.d[2][2:0] = value.q[2][2:0] + 1;
+
+        }
+        if (edge_adetectordown.out)
+         { position.d = position.ATWO;
+          ascore.d = ascore.q + value.q[1][2:0];
+          value.d[1][2:0] = value.q[1][2:0] + 1; 
+          
+        
+        }
+     
+        if (edge_detectorchange.out)//||timer
+         position.d = position.START;
+          
+      position.BSTART:
+          value.d = value.q;
+
+          bscor = bscore.q;
+        //timer starts
+
+        position.d = position.BONE;
+        //positionb.d = positionb.FOUR;
+      
+          
+      position.BONE:
+        io_sel2[0] = 1;
+                if (edge_adetectorup.out)
+          {
+          position.d = position.BTHREE;
+          bscore.d = bscore.q + value.q[2][2:0];
+          value.d[2][2:0] = value.q[2][2:0] + 1;
+
+        }
+          //ascore = ascore + boxfour[7];
+         // reg.data[4] = reg.data[1] + reg.data[4];
+          
+        if (edge_adetectorright.out)
+         { position.d = position.BTWO;
+          bscore.d = bscore.q + value.q[1][2:0];
+          value.d[1][2:0] = value.q[1][2:0] + 1;
+                
+         }   
+        if (edge_detectortest.out)//tim up
+        position.d = position.TEST1;
+         
+      position.BTWO:
+        io_sel2[1] = 1;
+        if(edge_adetectoruleft.out)
+         { position.d = position.BONE;
+          bscore.d = bscore.q + value.q[3][2:0];
+          value.d[0][2:0] = value.q[0][2:0] + 1;
+
+        } 
+          
+        if (edge_adetectorup.out)
+          {position.d = position.BFOUR;
+         
+         bscore.d = bscore.q + value.q[2][2:0];
+          value.d[3][2:0] = value.q[3][2:0] + 1;       
+        }
+       if (edge_detectortest.out)//tim up
+        position.d = position.TEST1;
+          
+        
+        
+          position.BTHREE:
+
+      io_sel2[2] = 1;
+        if (edge_adetectorright.out)
+         { position.d = position.BFOUR;
+          bscore.d = bscore.q + value.q[3][2:0];
+          value.d[3][2:0] = value.q[3][2:0] + 1;
+
+        }
+          
+        if (edge_adetectordown.out)
+        {
+          position.d = position.BONE;
+          bscore.d = bscore.q + value.q[0][2:0];
+          value.d[0][2:0] = value.q[0][2:0] + 1;
+
+        }
+       if (edge_detectortest.out)//tim up
+        position.d = position.TEST1;
+          
+      position.BFOUR:
+              io_sel2[3] = 1;
+
+                  
+        if (edge_adetectoruleft.out)
+         { position.d = position.BTHREE;
+          bscore.d = bscore.q + value.q[2][2:0];
+          value.d[2][2:0] = value.q[2][2:0] + 1;
+
+        }
+        if (edge_adetectordown.out)
+         { position.d = position.BTWO;
+          bscore.d = bscore.q + value.q[1][2:0];
+          value.d[1][2:0] = value.q[1][2:0] + 1; 
+          
+        
+        }
+       if (edge_detectortest.out)//tim up
+        position.d = position.TEST1;
+          
+      position.TEST1:  
+      alucompare.a = ascore.q;
+      alucompare.b = bscore.q;
+      alucompare.alufn = 6b110011;
+        
+      if (alucompare.alu[0] == 1)
+        position.d = position.DRAW;
+      if (alucompare.alu[0] == 0)
+        position.d = position.TEST2;
+          
+      position.TEST2:
+        alucompare.a = ascore.q;
+        alucompare.b = bscore.q;
+        alucompare.alufn = 6b110101;
+          
+      if (alucompare.alu[0] == 1 && bscore.q <8b00111111 )
+        position.d = position.BWIN;
+      else
+        position.d = position.TEST3;
+          
+      position.TEST3:
+        alucompare.b = ascore.q;
+        alucompare.a = bscore.q;
+        alucompare.alufn = 6b110101;
+      if (alucompare.alu[0] == 1 && ascore.q <8b00111111 )
+        position.d = position.AWIN;      
+          
+
+          
+      position.DRAW:
+        io_sel1[3:0] = 4b1111;
+        io_sel2[3:0] = 4b1111;
+        
+      position.AWIN:
+        io_sel1[3:0] = 4b1111;
+        io_sel2[3:0] = 4b0000;
+        
+      position.BWIN:
+        io_sel2[3:0] = 4b1111;
+        io_sel1[3:0] = 4b0000;
+        
+        
+        
+        
+    }
+          
+  }
+}

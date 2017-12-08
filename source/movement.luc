@@ -1,0 +1,203 @@
+module amovement (
+    input clk,  // clock
+    input rst_n,            // reset button (active low)
+    input abuttonup,
+    input abuttondown,
+    input abuttonleft,
+    input abuttonright,
+
+    
+    input buttonreset,
+
+
+    input abuttonstart, 
+    output io_sel1[4],   //a position
+
+    output ascor[8],      //output for other module
+
+    input valuea[4][3],
+    output returnvaluea[4][3]
+    
+
+
+  ) {
+
+  
+  
+  sig rst;                  // reset signal
+  sig four1[4][3];             //value from generator
+
+
+  
+.clk(clk){
+    reset_conditioner reset_cond;
+    .rst(rst){
+    
+    fsm position(#INIT(IDLE)) = {IDLE,START,ONE,TWO,THREE,FOUR};
+    fsm positionb(#INIT(FOUR)) = {ONE,TWO,THREE,FOUR};
+    //register reg[9](#WIDTH(4));
+    //register reg_position(#WIDTH(5));
+    }
+
+    edge_detector edge_adetectorup(#RISE(1),#FALL(0));
+    button_conditioner button_acondup;
+    edge_detector edge_adetectordown(#RISE(1),#FALL(0));
+    button_conditioner button_aconddown;
+    edge_detector edge_adetectoruleft(#RISE(1),#FALL(0));
+    button_conditioner button_acondleft;
+    edge_detector edge_adetectorright(#RISE(1),#FALL(0));
+    button_conditioner button_acondright;
+   
+    edge_detector edge_detectorstart(#RISE(1),#FALL(0));
+    button_conditioner button_condstart;
+    edge_detector edge_detectorreset(#RISE(1),#FALL(0));
+    button_conditioner button_condreset;    
+   // dff avalue[4][3](.clk(clk), .rst(rst));
+    dff ascore[8](.clk(clk), .rst(rst), #INIT(8b00000000));
+    dff bscore[8](.clk(clk), .rst(rst), #INIT(8b00000000));
+   
+    
+  }
+  
+    
+  always {
+    reset_cond.in = ~rst_n; // input raw inverted reset signal
+    rst = reset_cond.out;   // conditioned reset
+    
+    
+    //numbergen1.clk = clk;
+    //numbergen1.rst = rst;
+
+    ascore.d =ascore.q;
+    
+    ascor = ascore.q[7:0];
+
+    returnvaluea = {3b000,3b000,3b000,3b000};
+    
+ 
+    
+    
+
+    
+    
+
+    io_sel1 = 4b0000;
+
+
+    button_acondup.in = ~abuttonup;
+    button_aconddown.in = ~abuttondown;
+    button_acondleft.in = ~abuttonleft;
+    button_acondright.in = ~abuttonright;
+
+    button_condstart.in = ~abuttonstart;
+    button_condreset.in = ~buttonreset;
+          
+    edge_adetectorup.in = button_acondup.out;
+    edge_adetectordown.in = button_aconddown.out;
+    edge_adetectoruleft.in = button_acondleft.out;
+    edge_adetectorright.in = button_acondright.out;
+
+    edge_detectorstart.in = button_condstart.out;  
+    edge_detectorreset.in = button_condreset.out;  
+    
+
+    
+
+    
+    case(position.q){
+      position.IDLE:
+        
+        // ascor = 8b00000000;
+         //bscor = 8b00000000;    
+        if (edge_detectorstart.out)
+          position.d = position.START;
+
+        
+      position.START: 
+          
+  
+          ascor = ascore.q[7:0];
+
+        position.d = position.ONE;
+        positionb.d = positionb.FOUR;
+          
+           
+
+           
+      position.ONE:
+         io_sel1[0] = 1;
+        if (edge_adetectorup.out)
+          {
+          position.d = position.THREE;
+          ascore.d[7:0] = ascore.q[7:0] + valuea[2][2:0];
+          returnvaluea[2][2:0] = valuea[2][2:0] + 1;
+
+        }
+          //ascore = ascore + boxfour[7];
+         // reg.data[4] = reg.data[1] + reg.data[4];
+          
+        if (edge_adetectorright.out)
+         { position.d = position.TWO;
+          ascore.d[7:0] = ascore.q[7:0] + valuea[1][2:0];
+          returnvaluea[1][2:0] = valuea[1][2:0] + 1;
+
+        } 
+         
+      position.TWO:
+        io_sel1[1] = 1;
+        if(edge_adetectoruleft.out)
+         { position.d = position.ONE;
+          ascore.d[7:0] = ascore.q[7:0] + valuea[0][2:0];
+          returnvaluea[0][2:0] = valuea[0][2:0] + 1;
+
+        } 
+          
+        if (edge_adetectorup.out)
+          {position.d = position.FOUR;
+         
+         ascore.d[7:0] = ascore.q[7:0] + valuea[3][2:0];
+          returnvaluea[3][2:0] = valuea[3][2:0] + 1;
+
+        }  
+         
+
+          
+      position.THREE:
+        io_sel1[2] = 1;
+        if (edge_adetectorright.out)
+         { position.d = position.FOUR;
+          ascore.d[7:0] = ascore.q[7:0] + valuea[3][2:0];
+          returnvaluea[3][2:0] = valuea[3][2:0] + 1;
+
+        }
+          
+        if (edge_adetectordown.out)
+        {
+          position.d = position.ONE;
+          ascore.d[7:0] = ascore.q[7:0] + valuea[0][2:0];
+          returnvaluea[0][2:0] = valuea[0][2:0] + 1;
+
+        }
+      position.FOUR:
+        io_sel1[3] = 1;
+
+                  
+        if (edge_adetectoruleft.out)
+         { position.d = position.THREE;
+          ascore.d[7:0] = ascore.q[7:0] + valuea[2][2:0];
+          returnvaluea[2][2:0] = valuea[2][2:0] + 1;
+
+        }
+        if (edge_adetectordown.out)
+         { position.d = position.TWO;
+          ascore.d[7:0] = ascore.q[7:0] + valuea[2][2:0];
+          returnvaluea[1][2:0] = valuea[1][2:0] + 1; 
+          
+        
+        }
+        
+     
+      
+    }
+  }
+  }

@@ -1,0 +1,205 @@
+module bmovement (
+    input clk,  // clock
+    input rst_n,            // reset button (active low)
+
+    input bbuttonup,
+    input bbuttondown,
+    input bbuttonleft,
+    input bbuttonright,
+    
+    input buttonreset,
+
+
+    input abuttonstart, 
+
+    output io_sel2[4],   //b position
+
+    output bscor[8],
+    input valueb[4][3],
+    output returnvalueb[4][3]
+    
+
+
+  ) {
+
+  
+  
+  sig rst;                  // reset signal
+  sig four1[4][3];             //value from generator
+
+
+  
+.clk(clk){
+    reset_conditioner reset_cond;
+    .rst(rst){
+    
+    
+    fsm positionb(#INIT(IDLE)) = {IDLE,START,ONE,TWO,THREE,FOUR};
+    //register reg[9](#WIDTH(4));
+    //register reg_position(#WIDTH(5));
+    }
+
+   
+    edge_detector edge_bdetectorup(#RISE(1),#FALL(0));
+    button_conditioner button_bcondup;
+    edge_detector edge_bdetectordown(#RISE(1),#FALL(0));
+    button_conditioner button_bconddown;
+    edge_detector edge_bdetectoruleft(#RISE(1),#FALL(0));
+    button_conditioner button_bcondleft;
+    edge_detector edge_bdetectorright(#RISE(1),#FALL(0));
+    button_conditioner button_bcondright;
+
+    edge_detector edge_detectorstart(#RISE(1),#FALL(0));
+    button_conditioner button_condstart;
+    edge_detector edge_detectorreset(#RISE(1),#FALL(0));
+    button_conditioner button_condreset;    
+
+    dff ascore[8](.clk(clk), .rst(rst), #INIT(8b00000000));
+    dff bscore[8](.clk(clk), .rst(rst), #INIT(8b00000000));
+   
+    
+  }
+  
+    
+  always {
+    reset_cond.in = ~rst_n; // input raw inverted reset signal
+    rst = reset_cond.out;   // conditioned reset
+
+    
+    //numbergen1.clk = clk;
+    //numbergen1.rst = rst;
+
+    bscore.d =bscore.q;
+    
+
+    bscor = bscore.q;
+
+    
+    returnvalueb = {3b000,3b000,3b000,3b000};
+    
+    
+
+    
+    
+
+
+    io_sel2 = 4b0000;
+
+  
+    button_condstart.in = ~abuttonstart;
+    button_condreset.in = ~buttonreset;
+          
+
+    edge_detectorstart.in = button_condstart.out;  
+    edge_detectorreset.in = button_condreset.out;  
+    
+    button_bcondup.in = ~bbuttonup;
+    button_bconddown.in = ~bbuttondown;
+    button_bcondleft.in = ~bbuttonleft;
+    button_bcondright.in = ~bbuttonright;
+
+      
+    edge_bdetectorup.in = button_bcondup.out;
+    edge_bdetectordown.in = button_bconddown.out;
+    edge_bdetectoruleft.in = button_bcondleft.out;
+    edge_bdetectorright.in = button_bcondright.out;
+
+    
+
+    
+    case(positionb.q){
+      positionb.IDLE:
+  
+        // ascor = 8b00000000;
+         //bscor = 8b00000000;    
+        if (edge_detectorstart.out)
+          positionb.d = positionb.START;
+
+        
+      positionb.START: 
+  
+          bscor = bscore.q[7:0];
+
+        
+        positionb.d = positionb.FOUR;
+          
+           
+
+           
+      positionb.ONE:
+         io_sel2[0] = 1;
+        if (edge_bdetectorup.out)
+          {
+          positionb.d = positionb.THREE;
+          bscore.d[7:0] = bscore.q[7:0] + valueb[2][2:0];
+          returnvalueb[2][2:0] = valueb[2][2:0] + 1;
+
+        }
+          //ascore = ascore + boxfour[7];
+         // reg.data[4] = reg.data[1] + reg.data[4];
+          
+        if (edge_bdetectorright.out)
+         { positionb.d = positionb.TWO;
+          bscore.d[7:0] = bscore.q[7:0] + valueb[1][2:0];
+        returnvalueb[1][2:0] = valueb[1][2:0] + 1;
+
+        } 
+         
+      positionb.TWO:
+        io_sel2[1] = 1;
+        if(edge_bdetectoruleft.out)
+         { positionb.d = positionb.ONE;
+          bscore.d[7:0] = bscore.q[7:0] + valueb[0][2:0];
+          returnvalueb[0][2:0] = valueb[0][2:0] + 1;
+
+        } 
+          
+        if (edge_bdetectorup.out)
+          {positionb.d = positionb.FOUR;
+         
+         bscore.d[7:0] = bscore.q[7:0] + valueb[3][2:0];
+          returnvalueb[3][2:0] = valueb[3][2:0] + 1;
+
+        }  
+         
+
+          
+      positionb.THREE:
+        io_sel2[2] = 1;
+        if (edge_bdetectorright.out)
+         { positionb.d = positionb.FOUR;
+          bscore.d[7:0] = bscore.q[7:0] + valueb[3][2:0];
+          returnvalueb[3][2:0] = valueb[3][2:0] + 1;
+
+        }
+          
+        if (edge_bdetectordown.out)
+        {
+          positionb.d = positionb.ONE;
+          bscore.d[7:0] = bscore.q[7:0] + valueb[0][2:0];
+          returnvalueb[0][2:0] = valueb[0][2:0] + 1;
+
+        }
+      positionb.FOUR:
+        io_sel2[3] = 1;
+
+                  
+        if (edge_bdetectoruleft.out)
+         { positionb.d = positionb.THREE;
+          bscore.d[7:0] = bscore.q[7:0] + valueb[2][2:0];
+          returnvalueb[2][2:0] = valueb[2][2:0] + 1;
+
+        }
+        if (edge_bdetectordown.out)
+         { positionb.d = positionb.TWO;
+          bscore.d[7:0] = bscore.q[7:0] + valueb[2][2:0];
+          returnvalueb[1][2:0] = valueb[1][2:0] + 1; 
+          
+        
+        }
+        
+     
+      
+    }
+  }
+  }

@@ -1,0 +1,237 @@
+module mojo_top (
+    input clk,              // 50MHz clock
+    input rst_n,            // reset button (active low)
+    output led [8],         // 8 user controllable LEDs
+    input cclk,             // configuration clock, AVR ready when high
+    output spi_miso,        // AVR SPI MISO
+    input spi_ss,           // AVR SPI Slave Select
+    input spi_mosi,         // AVR SPI MOSI
+    input spi_sck,          // AVR SPI Clock
+    output spi_channel [4], // AVR general purpose pins (used by default to select ADC channel)
+    input avr_tx,           // AVR TX (FPGA RX)
+    output avr_rx,          // AVR RX (FPGA TX)
+    input avr_rx_busy,      // AVR RX buffer full
+    input abuttonup,
+    input abuttondown,
+    input abuttonleft,
+    input abuttonright,
+    input bbuttonup,
+    input bbuttondown,
+    input bbuttonleft,
+    input bbuttonright,
+    input abuttonstart,
+    input buttonreset,
+    input buttonincrease,
+    input buttonstart,
+    input buttonchange,
+    input buttontest,
+    
+
+    
+    output io_sel3[24],
+    output io_sel1[4],
+    output io_sel2[4]
+    
+   // output io_sel1[9],
+    //output io_sel2[9]
+    
+    
+    
+    
+  ) {
+  sig timesup;
+  sig rst;                  // reset signal
+  //sig ascor[8];
+  //sig bscor[8];
+  sig goals[8];
+  sig gamestatus[2];
+  
+
+  .clk(clk) {
+    // The reset conditioner is used to synchronize the reset signal to the FPGA
+    // clock. This ensures the entire FPGA comes out of reset at the same time.
+    reset_conditioner reset_cond;
+
+    
+
+
+    states states;
+    numbergen numbergen1;
+     // timer timer;
+  //  gamestatus game;
+      .rst(rst) {
+
+       dff goal[8](.clk(clk), .rst(rst), #INIT(8b00011111));
+       dff value[4][3](.clk(clk), .rst(rst));
+       dff valuetwo[4][3](.clk(clk), .rst(rst));
+       
+     
+      
+      //multi_7_seg seg;        // this is for the segments on the MOJO
+      multi_seven_seg seg1;   // this is for the ext segments
+      multi_seven_seg seg2;   // this is for the ext segments
+      multi_seven_seg seg3;   // this is for the ext segments
+      multi_seven_seg seg4;   // this is for the ext segments 
+      multi_seven_seg seg5;   // this is for the ext segments
+    
+      }
+          edge_detector edge_detectorincrease(#RISE(1),#FALL(0));
+      button_conditioner button_condincrease; 
+      edge_detector edge_detectorstart(#RISE(1),#FALL(0));
+      button_conditioner button_condstart;  
+    } 
+  decToBin d2B1; //convert decimal to binary  !! not sure if this module is the issue, but doesnt seem like the main problem comes from here
+    decToBin d2B2;
+    decToBin d2B3;
+    decToBin d2B4;
+    decToBin d2B5;
+    //decToBin d2B6;  
+  
+  
+    binToDec b2D1;
+    binToDec b2D2;
+    binToDec b2D3;
+    binToDec b2D4;
+    binToDectwo b2D5;
+    binToDectwo b2D6;
+  
+  
+  always {
+
+  
+    reset_cond.in = ~rst_n; // input raw inverted reset signal
+    rst = reset_cond.out;   // conditioned reset
+    
+    led = 8h00;             // turn LEDs off
+    spi_miso = bz;          // not using SPI
+    spi_channel = bzzzz;    // not using flags
+    avr_rx = bz;            // not using serial port
+    goals = goal.q;
+    numbergen1.rst = rst;
+    value.d = numbergen1.four ;
+    valuetwo.d = numbergen1.four;
+    button_condincrease.in = ~buttonincrease;
+    edge_detectorincrease.in = button_condincrease.out;     
+    button_condstart.in = ~abuttonstart;
+    edge_detectorstart.in = button_condstart.out;  
+    states.rst_n = rst_n;    
+    states.abuttonstart = abuttonstart;
+    states.abuttonup = abuttonup;
+    states.buttonchange =buttonchange;
+    states.buttontest = buttontest;
+    states.abuttondown = abuttondown;
+    states.abuttonleft = abuttonleft;
+    states.abuttonright = abuttonright;
+    states.abuttonstart = abuttonstart;
+    states.bbuttonup = bbuttonup;
+    states.bbuttondown = bbuttondown;
+    states.bbuttonleft = bbuttonleft;
+    states.bbuttonright = bbuttonright;
+
+
+    //timesup = timer.timesup;
+
+    //gamestatus = game.status;
+    io_sel1 = states.io_sel1;
+    io_sel2 = states.io_sel2;
+
+
+
+    
+    states.buttonreset = buttonreset;
+    states.buttonreset = buttonreset;
+
+    
+    //timer.start = buttonstart;
+   // game.timer = timer.timee;
+   // game.rst = rst;
+    //game.goal = goals;
+    //game.bscore = move.bscor;
+    //game.ascore = move.ascor;
+    
+
+    b2D1.value = states.box1value;   // insert box value 1 here
+    d2B1.dgt = b2D1.digits;
+    seg1.values = d2B1.biny;
+    io_sel3[3:0] = ~seg1.sel;
+    io_sel3[7:4] = seg1.bi;
+    
+    //// BOX 2 VALUE ////
+    b2D2.value = states.box2value;
+   // b2D2.value = value.q[1][2:0];  // insert box value 2 here
+    d2B2.dgt = b2D2.digits;
+    seg2.values = d2B2.biny;
+    io_sel3[3:0] = ~seg2.sel;
+    io_sel3[11:8] = seg2.bi;
+    
+    //// BOX 3 VALUE ////
+    b2D3.value = states.box3value;  // insert box value 2 here
+    d2B3.dgt = b2D3.digits;
+    seg3.values = d2B3.biny;
+    io_sel3[3:0] = ~seg3.sel;
+    io_sel3[15:12] = seg3.bi;
+    
+    
+    //// BOX 4 VALUE ////
+    b2D4.value = states.box4value;  // insert box value 2 here
+    d2B4.dgt = b2D4.digits;
+    seg4.values = d2B4.biny;
+    io_sel3[3:0] = ~seg4.sel;
+    io_sel3[19:16] = seg4.bi;
+    
+    
+    //// SCORE BOX VALUE ////
+    b2D5.value = states.ascor; //8 bit
+    b2D6.value = states.bscor; //8 bit
+
+    d2B5.dgt = {b2D5.digits[1],b2D5.digits[0], b2D6.digits[1],  b2D6.digits[0]}; // convert score [4][4] into binary of [4][4]
+    seg5.values = d2B5.biny;
+    io_sel3[3:0] = ~seg5.sel;
+    io_sel3[23:20] = seg5.bi;
+    
+    
+   //  case (state.q) {
+     // state.IDLE: 
+      
+      //  if (edge_detectorincrease.out)
+        // { goal.d = goal.q + 1;
+         // goals = goal.q;
+         // }
+       //if (edge_detectorstart.out)
+       //   state.d = state.START; 
+          
+     // state.START:
+      
+      //  if (gamestatus == 00)
+       //   state.d = state.BWIN;
+        
+       // if (gamestatus == 10 )
+       //   state.d = state.DRAW;
+          
+      //  if (gamestatus == 01)
+       //   state.d = state.AWIN;
+        
+          
+
+        
+       
+        
+      //state.AWIN:
+        //io_sel1 = 4b1111;
+         
+        //if rst
+      //state.BWIN:
+       // io_sel2 = 4b1110;
+      
+     // state.DRAW:
+       // io_sel1 = 4b1111;
+        //io_sel2 = 4b1111;
+      
+        
+        
+        
+        
+          
+     
+  }
+}
